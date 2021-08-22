@@ -9,6 +9,7 @@ from bs4 import BeautifulSoup as soup
 import datetime as dt
 from webdriver_manager.chrome import ChromeDriverManager
 import pandas as pd
+
 def scrape_all():
     executable_path = {'executable_path': ChromeDriverManager().install()}
     browser = Browser('chrome', **executable_path, headless=False)
@@ -18,7 +19,9 @@ def scrape_all():
         "news_paragraph":news_paragraph,
         "featured_image":featured_image(browser),
         "facts":mars_facts(),
-        "last_modified":dt.datetime.now()
+        "hemisphere":hempisphere_image_and_title(browser),
+        "last_modified":dt.datetime.now(),
+
     }
     browser.quit()
     return data
@@ -67,7 +70,7 @@ def featured_image(browser):
     # we did this bc we want to get url like this not getting it manualy bc if the page updated we are still getting the first image
 
     #get the first part of url from the webpage adress bar
-    img_url=f'https://spaceimages-mars.com/{img_url_rel}'
+    img_url=url+img_url_rel
 
     return img_url
 
@@ -88,6 +91,40 @@ def mars_facts():
 
     #with this line of code now we have the table in our web app
     return df.to_html()
+
+def hempisphere_image_and_title(browser):
+    url = 'https://marshemispheres.com/'
+
+    browser.visit(url)
+    html=browser.html
+    img_soup=soup(html,'html.parser')
+    hemisphere_image_urls = []
+
+# 3. Write code to retrieve the image urls and titles for each hemisphere.
+    container_em=img_soup.find('div',class_="collapsible results")
+
+    div_tags=container_em.find_all('div',class_='description')
+
+    # a_tags=div_tags.find_all('a')
+    # print(a_tags)
+    for d in div_tags:
+        hemisphere={}
+        next_url=d.find('a').get('href')
+    
+        browser.visit(url + next_url)
+        html=browser.html
+        full_img_soup=soup(html,'html.parser')
+        
+        img_url=full_img_soup.find('img',class_="wide-image").get('src')
+    
+        title=full_img_soup.find('h2',class_="title").get_text()
+        print(title)
+        hemisphere['img_url']= url+img_url
+        hemisphere['title']=title
+
+        hemisphere_image_urls.append(hemisphere)
+
+    return hemisphere_image_urls
 
 if __name__=="__main__":
     #if running as script, print scraped data
